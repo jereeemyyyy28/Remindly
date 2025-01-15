@@ -21,7 +21,7 @@ const RegisterPage = () => {
         signInWithPopup(auth, new GoogleAuthProvider())
             .then(response => {
                 console.log(response.user.uid);
-                navigate("/");
+                navigate("/home");
             })
             .catch(err => {
                 console.log(err);
@@ -40,7 +40,7 @@ const RegisterPage = () => {
         createUserWithEmailAndPassword(auth, email, password)
             .then(response => {
                 console.log(response.user.uid);
-                navigate("/");
+                navigate("/home");
             })
             .catch(err => {
                 console.log(err);
