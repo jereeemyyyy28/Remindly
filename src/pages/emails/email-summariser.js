@@ -3,7 +3,10 @@ import readline from 'readline';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import OpenAI from 'openai';  // Updated import for the latest SDK
+import OpenAI from 'openai';
+import dotenv from 'dotenv'
+
+dotenv.config();
 
 // Paths for storing OAuth credentials and tokens
 const __filename = fileURLToPath(import.meta.url);
@@ -18,7 +21,7 @@ async function authorize(callback) {
   try {
     const content = await fs.readFile(CREDENTIALS_PATH);
     const { client_secret, client_id, redirect_uris } = JSON.parse(content).installed;
-    const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+    const oAuth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, redirect_uris[0]);
 
     try {
       const token = await fs.readFile(TOKEN_PATH);
@@ -61,7 +64,8 @@ function listThreads(auth) {
   gmail.users.threads.list(
     {
       userId: 'me',
-      maxResults: 2, // Fetch the 5 most recent threads
+      maxResults: 1,
+      labelIds: ['INBOX'],
     },
     (err, res) => {
       if (err) return console.error('Error fetching threads:', err);
@@ -109,13 +113,18 @@ function getThreadContent(auth, threadId) {
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: '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',  // Replace with your OpenAI API key
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 async function summarizeThread(threadContent) {
   try {
-    const prompt = `Summarize the following email thread. Highlight key tasks, decisions, and action items:\n\n${threadContent}`;
-
+    const prompt = `Summarize the following email thread. 
+    Provide a concise summary of the conversation, followed by the tasks and their respective deadlines in the format:
+    1. Task: Description of task
+       Deadline: [Time or date for the task]
+    
+    Summary of the emails: \n\n${threadContent}`;
+    
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [{ role: 'user', content: prompt }],
@@ -123,7 +132,7 @@ async function summarizeThread(threadContent) {
       temperature: 0.5,
     });
 
-    console.log('Summary:', response.choices[0].message.content.trim());
+    console.log(response.choices[0].message.content.trim());
   } catch (error) {
     console.error('Error summarizing thread:', error);
   }
