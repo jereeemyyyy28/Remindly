@@ -22,7 +22,7 @@ const LoginPage = () => {
         signInWithPopup(auth, new GoogleAuthProvider())
             .then(response => {
                 console.log(response.user.uid);
-                navigate("/");
+                navigate("/home");
             })
             .catch(err => {
                 console.log(err);
@@ -39,7 +39,7 @@ const LoginPage = () => {
         signInWithEmailAndPassword(auth, email, password)
             .then(response => {
                 console.log(response.user.uid);
-                navigate("/");
+                navigate("/home");
             })
             .catch(err => {
                 console.log(err);
@@ -60,14 +60,14 @@ const LoginPage = () => {
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black"
                     />
                     <input
                         type="password"
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black"
                     />
                 </div>
 
