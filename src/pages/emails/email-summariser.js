@@ -61,7 +61,7 @@ function listThreads(auth) {
   gmail.users.threads.list(
     {
       userId: 'me',
-      maxResults: 5, // Fetch the 5 most recent threads
+      maxResults: 2, // Fetch the 5 most recent threads
     },
     (err, res) => {
       if (err) return console.error('Error fetching threads:', err);
