@@ -1,27 +1,44 @@
+import express from 'express';
+import bodyParser from 'body-parser';
 import { google } from 'googleapis';
-import readline from 'readline';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
+import cors from 'cors';
 
 dotenv.config();
+
+const app = express();
+const port = 3000;
+
+app.use(cors()); 
+app.use(bodyParser.json());
 
 // Paths for storing OAuth credentials and tokens
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CREDENTIALS_PATH = path.join(__dirname, 'credentials.json');
 const TOKEN_PATH = path.join(__dirname, 'token.json');
-
-// Define the scope for Gmail read-only access
 const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+let firstEmailThread = ''; // Store the fetched email thread temporarily
 
 async function authorize(callback) {
   try {
     const content = await fs.readFile(CREDENTIALS_PATH);
     const { client_secret, client_id, redirect_uris } = JSON.parse(content).installed;
-    const oAuth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, redirect_uris[0]);
+    const oAuth2Client = new google.auth.OAuth2(
+      process.env.CLIENT_ID,
+      process.env.CLIENT_SECRET,
+      redirect_uris[0]
+    );
 
     try {
       const token = await fs.readFile(TOKEN_PATH);
@@ -36,27 +53,7 @@ async function authorize(callback) {
 }
 
 async function getNewToken(oAuth2Client, callback) {
-  const authUrl = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: SCOPES,
-  });
-  console.log('Authorize this app by visiting this url:', authUrl);
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  rl.question('Enter the code from that page here: ', async (code) => {
-    rl.close();
-    try {
-      const { tokens } = await oAuth2Client.getToken(code);
-      oAuth2Client.setCredentials(tokens);
-      await fs.writeFile(TOKEN_PATH, JSON.stringify(tokens));
-      console.log('Token stored to', TOKEN_PATH);
-      callback(oAuth2Client);
-    } catch (err) {
-      console.error('Error retrieving access token', err);
-    }
-  });
+  // OAuth flow logic here
 }
 
 function listThreads(auth) {
@@ -74,9 +71,8 @@ function listThreads(auth) {
         console.log('No threads found.');
         return;
       }
-      threads.forEach((thread) => {
-        getThreadContent(auth, thread.id);
-      });
+      const threadId = threads[0].id;
+      getThreadContent(auth, threadId);
     }
   );
 }
@@ -92,7 +88,6 @@ function getThreadContent(auth, threadId) {
       if (err) return console.error('Error fetching thread content:', err);
       const messages = res.data.messages;
 
-      // Concatenate content of all messages in the thread
       let threadContent = '';
       messages.forEach((message) => {
         const payload = message.payload;
@@ -105,16 +100,10 @@ function getThreadContent(auth, threadId) {
         });
       });
 
-      console.log('Full Thread Content:', threadContent);
-      summarizeThread(threadContent); // Pass concatenated content to summarization
+      firstEmailThread = threadContent; // Store the thread content
     }
   );
 }
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 async function summarizeThread(threadContent) {
   try {
@@ -132,10 +121,35 @@ async function summarizeThread(threadContent) {
       temperature: 0.5,
     });
 
-    console.log(response.choices[0].message.content.trim());
+    return response.choices[0].message.content.trim();
   } catch (error) {
     console.error('Error summarizing thread:', error);
+    throw error;
   }
 }
 
-authorize(listThreads);
+// Endpoint to fetch the first email thread
+app.get('/emails', (req, res) => {
+  if (firstEmailThread) {
+    res.json({ thread: firstEmailThread });
+  } else {
+    res.status(500).json({ error: 'Email thread not fetched yet.' });
+  }
+});
+
+// Endpoint to summarize an email thread
+app.post('/emails/summarize', async (req, res) => {
+  const { threadContent } = req.body;
+  try {
+    const summary = await summarizeThread(threadContent);
+    res.json({ summary });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate summary.' });
+  }
+});
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+  authorize(listThreads); // Fetch the email thread on server start
+});
