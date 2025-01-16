@@ -1,0 +1,9 @@
+/* Calendar.css */
+.sx-react-calendar-wrapper {
+    width: 1200px;          /* Set width to 1200px */
+    max-width: 100vw;       /* Ensure it doesn't exceed the viewport width */
+    height: 800px;          /* Set height to 800px */
+    max-height: 90vh;       /* Ensure the height doesn't exceed 90% of the viewport height */
+    margin: 0 auto;         /* Center the calendar horizontally */
+  }
+  

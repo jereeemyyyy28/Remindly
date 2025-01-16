@@ -1,0 +1,11 @@
+/* Global styles for centering */
+.create-event-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full height of the viewport */
+    text-align: center;
+    flex-direction: column;
+    margin: 0; /* Remove default margin */
+  }
+  
