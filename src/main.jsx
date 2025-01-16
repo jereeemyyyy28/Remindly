@@ -8,9 +8,11 @@ import AuthRoute from "./pages/auth/authRoute.jsx"
 import Meetings from "./pages/meetings/Meetings.jsx";
 import Tasks from "./pages/tasks/Tasks.jsx";
 import Reminders from "./pages/reminders/Reminders.jsx";
-import Emails from "./pages/emails/Emails.jsx";
 import HomePage from "./pages/home/homePage.jsx";
 import { BrowserRouter as Router, Routes, Route, Navigate} from "react-router-dom";
+import Emails from "./pages/emails/Emails";
+import EmailDetails from "./pages/emails/EmailDetails";
+import { auth } from "./components/firebaseConfig.js";
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -25,6 +27,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/emails" element={<Emails />} />
               <Route path="/home" element={<HomePage />} />
+              <Route path="/email/:id" element={<EmailDetails />} />
           </Routes>
       </Router>
   </StrictMode>,

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import NavBar from "../../components/navBar.jsx";
+import { collection, getDocs, addDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { db } from "../../components/firebaseConfig.js";
+import NavBar from '../../components/navBar.jsx';
 
 const Emails = () => {
   const [emailThread, setEmailThread] = useState(''); // Store email thread content
@@ -7,34 +9,62 @@ const Emails = () => {
   const [loading, setLoading] = useState(false); // Track loading state
   const [error, setError] = useState(null); // Track errors
 
-  // Fetch the first email thread on component mount
+  // Fetch the first email thread from Firestore
   useEffect(() => {
-    fetch('http://localhost:3000/emails')
-      .then((response) => response.json())
-      .then((data) => setEmailThread(data.thread))
-      .catch((err) => setError('Failed to fetch email thread'));
+    const fetchEmail = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/emails');
+        const data = await response.json();
+        if (response.ok) {
+          setEmailThread(data.thread);  // Update email thread if successful
+        } else {
+          setError(data.error);  // Show error if response is not successful
+        }
+      } catch (err) {
+        console.error('Error fetching email:', err);
+        setError('Failed to fetch email thread');
+      }
+    };
+
+    fetchEmail();
   }, []);
 
-  // Function to generate summary
-  const generateSummary = () => {
+  // Function to generate summary and store it in Firestore
+  const generateSummary = async () => {
     setLoading(true);
-    setError(null); // Clear any previous errors
-    fetch('http://localhost:3000/emails/summarize', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ threadContent: emailThread }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setSummary(data.summary);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError('Failed to generate summary');
-        setLoading(false);
+    setError(null);
+  
+    try {
+      // Send email thread to the backend for summarization
+      const response = await fetch('http://localhost:3000/emails/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ threadContent: emailThread }), // Send the email content to summarize
       });
+  
+      if (response.ok) {
+        const data = await response.json();
+        const generatedSummary = data.summary; // Get summary from the backend response
+  
+        // Add summary to Firestore
+        await addDoc(collection(db, 'summaries'), {
+          emailId: '1', // Link summary to the email thread
+          summary: generatedSummary,
+          createdAt: serverTimestamp(),
+        });
+  
+        setSummary(generatedSummary); // Update the summary in the UI
+      } else {
+        setError('Failed to generate summary');
+      }
+    } catch (err) {
+      console.error('Error generating summary:', err);
+      setError('Failed to generate summary');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

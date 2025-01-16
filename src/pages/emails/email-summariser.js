@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 const port = 3000;
 
-app.use(cors()); 
+app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(bodyParser.json());
 
 // Paths for storing OAuth credentials and tokens
@@ -66,6 +66,7 @@ function listThreads(auth) {
     },
     (err, res) => {
       if (err) return console.error('Error fetching threads:', err);
+      console.log('Threads fetched:', res); // Log response to check thread data
       const threads = res.data.threads;
       if (!threads || threads.length === 0) {
         console.log('No threads found.');
@@ -101,19 +102,24 @@ function getThreadContent(auth, threadId) {
       });
 
       firstEmailThread = threadContent; // Store the thread content
+      console.log('Fetched Thread:', firstEmailThread); // Log to check the content
     }
   );
 }
 
 async function summarizeThread(threadContent) {
   try {
-    const prompt = `Summarize the following email thread. 
-    Provide a concise summary of the conversation, followed by the tasks and their respective deadlines in the format:
-    1. Task: Description of task
-       Deadline: [Time or date for the task]
-    
-    Summary of the emails: \n\n${threadContent}`;
-    
+    // Refine the prompt to make OpenAI focus on summarizing the email, not just echoing it.
+    const prompt = `
+    Please summarize the following email thread. Extract key points, requests, and actions in a concise summary. Do not just repeat the email content.
+
+    This should be the format. Summary of the email thread. Followed by the tasks required to be completed by all parties. Followed by any deadlines mentioned.
+
+    Summary:
+    `;
+
+    console.log('Sending to OpenAI:', prompt); // Log to verify prompt content
+
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [{ role: 'user', content: prompt }],
@@ -133,6 +139,7 @@ app.get('/emails', (req, res) => {
   if (firstEmailThread) {
     res.json({ thread: firstEmailThread });
   } else {
+    console.log('First email thread is not populated yet.');
     res.status(500).json({ error: 'Email thread not fetched yet.' });
   }
 });
@@ -142,6 +149,7 @@ app.post('/emails/summarize', async (req, res) => {
   const { threadContent } = req.body;
   try {
     const summary = await summarizeThread(threadContent);
+    console.log('Generated Summary:', summary); // Log the summary before sending to frontend
     res.json({ summary });
   } catch (error) {
     res.status(500).json({ error: 'Failed to generate summary.' });
