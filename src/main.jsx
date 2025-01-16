@@ -27,7 +27,7 @@ createRoot(document.getElementById('root')).render(
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/emails" element={<Emails />} />
               <Route path="/home" element={<HomePage />} />
-              <Route path="/email/:id" element={<EmailDetails />} />
+              <Route path="/email/" element={<EmailDetails />} />
           </Routes>
       </Router>
   </StrictMode>,

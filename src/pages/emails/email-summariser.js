@@ -113,7 +113,9 @@ async function summarizeThread(threadContent) {
     const prompt = `
     Please summarize the following email thread. Extract key points, requests, and actions in a concise summary. Do not just repeat the email content.
 
-    This should be the format. Summary of the email thread. Followed by the tasks required to be completed by all parties. Followed by any deadlines mentioned.
+    This should be the format. Summary of the email thread. Followed by the tasks required to be completed by all parties. Followed by any deadlines mentioned. 
+
+    All this should be returned in only JSON format with the fields summary, tasks, and deadlines.
 
     Summary:
     `;

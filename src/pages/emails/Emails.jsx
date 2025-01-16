@@ -56,6 +56,7 @@ const Emails = () => {
         });
   
         setSummary(generatedSummary); // Update the summary in the UI
+        console.log("SUMMARY: ", generatedSummary);
       } else {
         setError('Failed to generate summary');
       }
